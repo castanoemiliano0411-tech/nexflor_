@@ -9,6 +9,12 @@ function cedulaOk(value) {
   return /^\d{6,10}$/.test(String(value || "").trim());
 }
 
+function plainDescriptor(value) {
+  if (!Array.isArray(value) || value.length !== 128) return null;
+  const numbers = value.map((item) => Number(item));
+  return numbers.every((item) => Number.isFinite(item)) ? numbers : null;
+}
+
 function onlyDigits(value) {
   return String(value || "").replace(/\D/g, "").slice(0, 10);
 }
@@ -127,23 +133,6 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
     }
   }
 
-  async function captureFrames() {
-    const video = videoRef.current;
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    const frames = [];
-    for (let step = 0; step < 4; step += 1) {
-      const width = video.videoWidth || 480;
-      const height = video.videoHeight || 360;
-      canvas.width = width;
-      canvas.height = height;
-      context.drawImage(video, 0, 0, width, height);
-      frames.push(canvas.toDataURL("image/jpeg", 0.72));
-      if (step < 3) await new Promise((resolve) => setTimeout(resolve, 450));
-    }
-    return frames;
-  }
-
   async function captureFace() {
     setError("");
     setResult(null);
@@ -167,30 +156,25 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
     }
     setPhase("escaneando");
     try {
-      if (status?.engine === "server") {
-        setPhase("guardando");
-        await finish({ frames: await captureFrames() });
-        return;
-      } else {
-        await prepareModels((message) => setError(message));
-        setError("");
-        const reading = await measureVideo(video, setCaptureNote);
-        if (!reading.quality || !reading.descriptor) {
-          setError("No alcancé a ver el rostro. Ponte de frente, acércate y vuelve a capturar.");
-          return;
-        }
-        if (mode === "registro") {
-          reading.liveness = true;
-          reading.staticImage = false;
-        } else if (!reading.liveness) {
-          setError("Ya veo el rostro. Parpadea o mueve un poco la cabeza y vuelve a comprobar.");
-          return;
-        }
-        setCapture(reading);
-        setPhase("guardando");
-        await finish(reading);
+      await prepareModels((message) => setError(message));
+      setError("");
+      const reading = await measureVideo(video, setCaptureNote);
+      const descriptor = plainDescriptor(reading.descriptor);
+      if (!reading.quality || !descriptor) {
+        setError("No alcancé a ver el rostro. Ponte de frente, acércate y vuelve a capturar.");
         return;
       }
+      reading.descriptor = descriptor;
+      if (mode === "registro") {
+        reading.liveness = true;
+        reading.staticImage = false;
+      } else if (!reading.liveness) {
+        setError("Ya veo el rostro. Parpadea o mueve un poco la cabeza y vuelve a comprobar.");
+        return;
+      }
+      setCapture(reading);
+      setPhase("guardando");
+      await finish(reading);
     } catch (err) {
       setError(err.message || "No se pudo capturar el rostro.");
     } finally {
