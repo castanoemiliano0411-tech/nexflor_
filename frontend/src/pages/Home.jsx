@@ -40,8 +40,8 @@ export default function Home() {
           <h1>{data.greeting}</h1>
           <div className="chips">
             <Link to="/id">1. NEXFLOR ID</Link>
-            <Link to="/cursos">2. Academy</Link>
-            <Link to="/practica/preparacion-segura">3. Práctica</Link>
+            <Link to="/posture">2. NEXFLOR POSTURE</Link>
+            <Link to="/cursos">3. NEXFLOR ACADEMY</Link>
           </div>
           <p className="lede">{data.subtitle}</p>
 

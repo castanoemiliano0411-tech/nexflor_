@@ -12,6 +12,7 @@ import Progress from "./pages/Progress.jsx";
 import Admin from "./pages/Admin.jsx";
 import Enter from "./pages/Enter.jsx";
 import Face from "./pages/Face.jsx";
+import Posture from "./pages/Posture.jsx";
 import AdminShortcut from "./components/AdminShortcut.jsx";
 
 function Guard() {
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="equipo" element={<Team />} />
         <Route path="progreso" element={<Progress />} />
         <Route path="id" element={<Face />} />
+        <Route path="posture" element={<Posture />} />
         <Route path="ingreso" element={<Navigate to="/id" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
