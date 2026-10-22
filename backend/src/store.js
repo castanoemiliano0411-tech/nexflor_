@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { enrich } from "./teach.js";
 
 const bundled = path.join(path.dirname(fileURLToPath(import.meta.url)), "../data/db.json");
+const FACE_KEYS = ["facePeople", "accessEvents", "faceAlerts", "adminAudit"];
 
 function dataFile() {
   if (!process.env.VERCEL) return bundled;
@@ -12,11 +13,29 @@ function dataFile() {
   return copy;
 }
 
+function faceMemory() {
+  if (!process.env.VERCEL) return null;
+  return (globalThis.__nexflorFace ||= {});
+}
+
 function loadDatabase() {
-  return JSON.parse(fs.readFileSync(dataFile(), "utf8"));
+  const db = JSON.parse(fs.readFileSync(dataFile(), "utf8"));
+  const mem = faceMemory();
+  if (!mem) return db;
+  for (const key of FACE_KEYS) {
+    if (!Array.isArray(mem[key])) mem[key] = Array.isArray(db[key]) ? db[key] : [];
+    db[key] = mem[key];
+  }
+  return db;
 }
 
 function write(data) {
+  const mem = faceMemory();
+  if (mem) {
+    for (const key of FACE_KEYS) {
+      if (Array.isArray(data[key])) mem[key] = data[key];
+    }
+  }
   fs.writeFileSync(dataFile(), JSON.stringify(data, null, 2));
 }
 
@@ -172,6 +191,25 @@ export function getQuiz(courseId, workerId) {
     lastAttempt: lastAttempt
       ? { percent: lastAttempt.percent, score: lastAttempt.score, total: lastAttempt.total, at: lastAttempt.at }
       : null,
+  };
+}
+
+export function checkQuizAnswer(courseId, questionId, answerId) {
+  const db = loadDatabase();
+  const course = db.courses.find((item) => item.id === courseId);
+  if (!course) return null;
+  const question = course.quiz.find((item) => item.id === questionId);
+  if (!question) {
+    const error = new Error("No encontré esa pregunta.");
+    error.status = 404;
+    throw error;
+  }
+  const chosen = String(answerId || "");
+  return {
+    id: question.id,
+    chosen,
+    correctOptionId: question.correct,
+    correct: chosen === question.correct,
   };
 }
 

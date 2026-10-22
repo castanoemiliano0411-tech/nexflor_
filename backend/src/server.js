@@ -371,6 +371,16 @@ app.get("/api/courses/:id/quiz", (req, res) => {
   });
 });
 
+app.post("/api/courses/:id/quiz/check", (req, res) => {
+  try {
+    const result = store.checkQuizAnswer(req.params.id, req.body?.questionId, req.body?.answerId);
+    if (!result) return res.status(404).json({ message: "Ese curso no tiene práctica." });
+    res.json(result);
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || "No se pudo comprobar la respuesta." });
+  }
+});
+
 app.post("/api/courses/:id/quiz", (req, res) => {
   try {
     const result = store.submitQuiz(req.params.id, req.body?.answers, workerId(req));

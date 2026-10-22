@@ -116,7 +116,7 @@ function Login({ onToken }) {
 }
 
 function Panel({ token, data, setData, error, setError, logout }) {
-  const [tab, setTab] = useState("cursos");
+  const [tab, setTab] = useState("ingreso");
   const [selected, setSelected] = useState("");
 
   async function load() {
@@ -125,6 +125,7 @@ function Panel({ token, data, setData, error, setError, logout }) {
       setData(body);
       setError("");
       setSelected((current) => body.courses.some((course) => course.id === current) ? current : body.courses[0]?.id || "");
+      if (body.pendingFaces > 0) setTab("ingreso");
     } catch (err) {
       if (err.message.includes("administrador")) logout();
       else setError(err.message);
@@ -134,6 +135,7 @@ function Panel({ token, data, setData, error, setError, logout }) {
   useEffect(() => { load(); }, [token]);
 
   const course = data?.courses.find((item) => item.id === selected);
+  const pendingFaces = data?.pendingFaces || 0;
 
   return (
     <main className="admin">
@@ -148,9 +150,15 @@ function Panel({ token, data, setData, error, setError, logout }) {
         </div>
       </header>
       <div className="chips">
-        {[["cursos", "NEXFLOR ACADEMY"], ["equipo", "Equipo"], ["archivos", "Archivos"], ["ingreso", "NEXFLOR ID"]].map(([item, label]) => (
+        {[
+          ["ingreso", "NEXFLOR ID"],
+          ["cursos", "NEXFLOR ACADEMY"],
+          ["equipo", "Equipo"],
+          ["archivos", "Archivos"],
+        ].map(([item, label]) => (
           <button key={item} type="button" className={tab === item ? "on" : ""} onClick={() => setTab(item)}>
             {label}
+            {item === "ingreso" && pendingFaces > 0 ? <em className="tab-badge">{pendingFaces}</em> : null}
           </button>
         ))}
       </div>
