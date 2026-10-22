@@ -47,9 +47,25 @@ function requireActor(req, res) {
   return session;
 }
 
+function descriptorOf(body) {
+  const raw = body?.descriptor;
+  const list = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === "object"
+      ? Object.keys(raw)
+        .filter((key) => /^\d+$/.test(key))
+        .sort((left, right) => Number(left) - Number(right))
+        .map((key) => raw[key])
+      : null;
+  if (!list || list.length !== 128) return null;
+  const numbers = list.map((value) => Number(value));
+  if (numbers.some((value) => !Number.isFinite(value))) return null;
+  return numbers;
+}
+
 function clientReading(body) {
-  const descriptor = body?.descriptor;
-  if (!Array.isArray(descriptor) || descriptor.length !== 128 || descriptor.some((value) => !Number.isFinite(value))) {
+  const descriptor = descriptorOf(body);
+  if (!descriptor) {
     const error = new Error("No llegó una medición válida del rostro.");
     error.status = 400;
     throw error;
@@ -60,6 +76,14 @@ function clientReading(body) {
     quality: body?.quality !== false,
     staticImage: body?.staticImage === true,
   };
+}
+
+async function readingFrom(body) {
+  if (descriptorOf(body)) return clientReading(body);
+  if (engineStatus().ready && Array.isArray(body?.frames) && body.frames.length) {
+    return analyzeFrames(body.frames);
+  }
+  return clientReading(body);
 }
 
 app.post("/api/workers/register", (req, res) => {
@@ -267,8 +291,7 @@ app.post("/api/face/verify", async (req, res, next) => {
   try {
     const session = requireActor(req, res);
     if (!session) return;
-    const status = engineStatus();
-    const reading = status.ready ? await analyzeFrames(req.body?.frames) : clientReading(req.body);
+    const reading = await readingFrom(req.body);
     res.json(face.verifyFace(reading, session.id));
   } catch (error) { next(error); }
 });
@@ -277,8 +300,7 @@ app.post("/api/face/register", async (req, res, next) => {
   try {
     const session = requireActor(req, res);
     if (!session) return;
-    const status = engineStatus();
-    const reading = status.ready ? await analyzeFrames(req.body?.frames) : clientReading(req.body);
+    const reading = await readingFrom(req.body);
     const worker = session.role === "worker" ? getWorkerById(session.id) : null;
     const result = face.registerPerson({
       fullName: worker?.name || req.body?.fullName,
