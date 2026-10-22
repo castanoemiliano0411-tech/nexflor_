@@ -100,10 +100,10 @@ async function readFace(buffer) {
   const image = downscale(decoded.data, decoded.width, decoded.height);
   const tensor = tf.tensor3d(image.pixels, [image.height, image.width, 3], "int32");
   try {
-    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.25 });
     const faces = await faceapi.detectAllFaces(tensor, options).withFaceLandmarks().withFaceDescriptors();
-    if (faces.length !== 1) return null;
-    const face = faces[0];
+    if (!faces.length) return null;
+    const face = faces.reduce((best, item) => (item.detection.box.width > best.detection.box.width ? item : best));
     const points = face.landmarks.positions;
     return {
       descriptor: Array.from(face.descriptor),
@@ -130,12 +130,13 @@ export async function analyzeFrames(dataUrls) {
   if (samples.length < 2) return { quality: false, liveness: false, staticImage, descriptor: null };
   const ears = samples.map((sample) => sample.ear);
   const noses = samples.map((sample) => sample.noseX);
-  const moved = Math.max(...noses) - Math.min(...noses) > samples[0].boxWidth * 0.035;
-  const blinked = Math.max(...ears) - Math.min(...ears) >= 0.045;
+  const moved = Math.max(...noses) - Math.min(...noses) > samples[0].boxWidth * 0.012;
+  const blinked = Math.max(...ears) - Math.min(...ears) >= 0.02;
+  const liveness = blinked || moved;
   return {
     quality: true,
-    liveness: !staticImage && (blinked || moved),
-    staticImage,
+    liveness,
+    staticImage: staticImage && !liveness,
     descriptor: average(samples.map((sample) => sample.descriptor)),
   };
 }
