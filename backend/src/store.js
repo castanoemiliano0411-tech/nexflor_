@@ -12,7 +12,7 @@ function dataFile() {
   return copy;
 }
 
-function read() {
+function loadDatabase() {
   return JSON.parse(fs.readFileSync(dataFile(), "utf8"));
 }
 
@@ -21,7 +21,7 @@ function write(data) {
 }
 
 export function readDb() {
-  return read();
+  return loadDatabase();
 }
 
 export function writeDb(data) {
@@ -82,7 +82,7 @@ export function health() {
 }
 
 export function me(workerId) {
-  const db = read();
+  const db = loadDatabase();
   const worker = workerId && (db.workers || []).find((item) => item.id === workerId);
   if (!worker) return db.user;
   return {
@@ -96,13 +96,13 @@ export function me(workerId) {
 }
 
 export function listCourses(workerId) {
-  const db = read();
+  const db = loadDatabase();
   const completed = completedSet(db, workerId);
   return db.courses.map((course) => publicCourse(enrich(course), completed));
 }
 
 export function getCourse(id, workerId) {
-  const db = read();
+  const db = loadDatabase();
   const found = db.courses.find((item) => item.id === id);
   if (!found) return null;
   const course = enrich(found);
@@ -126,7 +126,7 @@ export function getCourse(id, workerId) {
 }
 
 export function toggleLesson(courseId, lessonId, workerId) {
-  const db = read();
+  const db = loadDatabase();
   const course = db.courses.find((item) => item.id === courseId);
   if (!course) return null;
   const lesson = course.lessons.find((item) => item.id === lessonId);
@@ -151,7 +151,7 @@ export function toggleLesson(courseId, lessonId, workerId) {
 }
 
 export function getQuiz(courseId, workerId) {
-  const db = read();
+  const db = loadDatabase();
   const course = db.courses.find((item) => item.id === courseId);
   if (!course) return null;
   const lastAttempt = [...progressBag(db, workerId).attempts].reverse().find((attempt) => attempt.courseId === courseId) || null;
@@ -172,7 +172,7 @@ export function getQuiz(courseId, workerId) {
 }
 
 export function submitQuiz(courseId, answers, workerId) {
-  const db = read();
+  const db = loadDatabase();
   const course = db.courses.find((item) => item.id === courseId);
   if (!course) return null;
   if (!answers || typeof answers !== "object") {
@@ -204,7 +204,7 @@ export function submitQuiz(courseId, answers, workerId) {
 }
 
 export function listTeam() {
-  const db = read();
+  const db = loadDatabase();
   const average = db.team.length
     ? Math.round(db.team.reduce((sum, person) => sum + person.progress, 0) / db.team.length)
     : 0;
@@ -222,7 +222,7 @@ export function listTeam() {
 }
 
 export function progressReport(workerId) {
-  const db = read();
+  const db = loadDatabase();
   const completed = completedSet(db, workerId);
   const bag = progressBag(db, workerId);
   const learner = workerId ? me(workerId).name : db.user.name;
@@ -270,7 +270,7 @@ export function progressReport(workerId) {
 }
 
 export function dashboard(workerId) {
-  const db = read();
+  const db = loadDatabase();
   const person = me(workerId);
   const completed = completedSet(db, workerId);
   const bag = progressBag(db, workerId);

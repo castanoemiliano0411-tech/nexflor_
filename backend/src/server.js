@@ -86,21 +86,13 @@ app.post("/api/admin/login", (req, res) => {
   }
 });
 
-app.post("/api/workers/register", (req, res) => {
+function reply(res, work) {
   try {
-    res.status(201).json(registerWorker(req.body?.name, req.body?.password, req.body?.shift));
+    res.json(work());
   } catch (error) {
-    res.status(error.status || 400).json({ message: error.message || "No se pudo crear la cuenta." });
+    res.status(error.status || 500).json({ message: error.message || "No se pudo completar la solicitud." });
   }
-});
-
-app.post("/api/workers/login", (req, res) => {
-  try {
-    res.json(loginWorker(String(req.body?.name || ""), String(req.body?.password || "")));
-  } catch (error) {
-    res.status(error.status || 500).json({ message: error.message || "No se pudo entrar." });
-  }
-});
+}
 
 app.use("/api/admin", requireAdmin);
 
@@ -234,11 +226,11 @@ app.get("/api/admin/face/audit", (_req, res) => {
 });
 
 app.get("/api/health", (_req, res) => {
-  res.json(store.health());
+  reply(res, () => store.health());
 });
 
 app.get("/api/me", (req, res) => {
-  res.json(store.me(workerId(req)));
+  reply(res, () => store.me(workerId(req)));
 });
 
 app.get("/api/face/status", (req, res) => {
@@ -313,29 +305,47 @@ app.post("/api/face/code", (req, res, next) => {
 });
 
 app.get("/api/dashboard", (req, res) => {
-  res.json(store.dashboard(workerId(req)));
+  reply(res, () => store.dashboard(workerId(req)));
 });
 
 app.get("/api/courses", (req, res) => {
-  res.json(store.listCourses(workerId(req)));
+  reply(res, () => store.listCourses(workerId(req)));
 });
 
 app.get("/api/courses/:id", (req, res) => {
-  const course = store.getCourse(req.params.id, workerId(req));
-  if (!course) return res.status(404).json({ message: "Ese curso no está en el taller." });
-  res.json(course);
+  reply(res, () => {
+    const course = store.getCourse(req.params.id, workerId(req));
+    if (!course) {
+      const error = new Error("Ese curso no está en el taller.");
+      error.status = 404;
+      throw error;
+    }
+    return course;
+  });
 });
 
 app.post("/api/courses/:id/lessons/:lessonId/complete", (req, res) => {
-  const course = store.toggleLesson(req.params.id, req.params.lessonId, workerId(req));
-  if (!course) return res.status(404).json({ message: "No encontré esa lección." });
-  res.json(course);
+  reply(res, () => {
+    const course = store.toggleLesson(req.params.id, req.params.lessonId, workerId(req));
+    if (!course) {
+      const error = new Error("No encontré esa lección.");
+      error.status = 404;
+      throw error;
+    }
+    return course;
+  });
 });
 
 app.get("/api/courses/:id/quiz", (req, res) => {
-  const quiz = store.getQuiz(req.params.id, workerId(req));
-  if (!quiz) return res.status(404).json({ message: "Ese curso no tiene práctica." });
-  res.json(quiz);
+  reply(res, () => {
+    const quiz = store.getQuiz(req.params.id, workerId(req));
+    if (!quiz) {
+      const error = new Error("Ese curso no tiene práctica.");
+      error.status = 404;
+      throw error;
+    }
+    return quiz;
+  });
 });
 
 app.post("/api/courses/:id/quiz", (req, res) => {
@@ -349,11 +359,11 @@ app.post("/api/courses/:id/quiz", (req, res) => {
 });
 
 app.get("/api/team", (_req, res) => {
-  res.json(store.listTeam());
+  reply(res, () => store.listTeam());
 });
 
 app.get("/api/progress", (req, res) => {
-  res.json(store.progressReport(workerId(req)));
+  reply(res, () => store.progressReport(workerId(req)));
 });
 
 app.use("/api", (_req, res) => {
