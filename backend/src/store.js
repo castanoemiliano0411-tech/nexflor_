@@ -93,6 +93,7 @@ export function me(workerId) {
     initials: initials(worker.name),
     documentId: /^\d{6,10}$/.test(worker.documentId || "") ? worker.documentId : "",
     hasFace: Boolean(worker.facePersonId),
+    faceStatus: (db.facePeople || []).find((person) => person.id === worker.facePersonId)?.status || "",
     continueCourseId: worker.continueCourseId || db.user.continueCourseId,
   };
 }
