@@ -28,6 +28,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
   const [phase, setPhase] = useState("listo");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [cameraError, setCameraError] = useState("");
   const [form, setForm] = useState({ ...emptyForm, fullName: name || "", documentId: documentId || "", role: job || "" });
   const [code, setCode] = useState({ documentId: "", pin: "" });
   const [cameraOn, setCameraOn] = useState(false);
