@@ -84,7 +84,7 @@ export function health() {
 export function me(workerId) {
   const db = loadDatabase();
   const worker = workerId && (db.workers || []).find((item) => item.id === workerId);
-  if (!worker) return db.user;
+  if (!worker) return { ...db.user, matched: false };
   return {
     id: worker.id,
     name: worker.name.split(" ")[0],
@@ -95,6 +95,7 @@ export function me(workerId) {
     hasFace: Boolean(worker.facePersonId),
     faceStatus: (db.facePeople || []).find((person) => person.id === worker.facePersonId)?.status || "",
     continueCourseId: worker.continueCourseId || db.user.continueCourseId,
+    matched: true,
   };
 }
 

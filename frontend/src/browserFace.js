@@ -93,18 +93,23 @@ export async function measureVideo(video, onStep) {
   const context = canvas.getContext("2d", { willReadFrequently: true });
   const samples = [];
   const prints = [];
-  for (let step = 0; step < 8 && samples.length < 3; step += 1) {
+  await wait(400);
+  for (let step = 0; step < 14 && samples.length < 3; step += 1) {
     onStep?.(samples.length
-      ? `Rostro visto. Sigue mirando y parpadea. ${samples.length} de 2`
-      : "Buscando el rostro. Mira de frente y acércate.");
-    const width = video.videoWidth || 480;
-    const height = video.videoHeight || 360;
+      ? `Rostro visto. Sigue mirando. ${samples.length} de 2`
+      : "Buscando el rostro. Mira de frente, con luz.");
+    const width = video.videoWidth || 0;
+    const height = video.videoHeight || 0;
+    if (width < 20 || height < 20) {
+      if (step < 13 && samples.length < 3) await wait(200);
+      continue;
+    }
     canvas.width = width;
     canvas.height = height;
     context.drawImage(video, 0, 0, width, height);
     const face = await findFace(canvas);
     const box = face?.detection.box;
-    if (face && box.width >= 40) {
+    if (face && box.width >= 32) {
       const points = face.landmarks.positions;
       prints.push(facePrint(context, box));
       samples.push({
@@ -116,7 +121,7 @@ export async function measureVideo(video, onStep) {
     } else if (!samples.length) {
       onStep?.(box ? "Te veo lejos. Acércate un poco más." : "Todavía no veo un rostro. Ponte frente a la cámara.");
     }
-    if (step < 7 && samples.length < 3) await wait(240);
+    if (step < 13 && samples.length < 3) await wait(200);
   }
   return readingFromSamples(samples, prints);
 }
