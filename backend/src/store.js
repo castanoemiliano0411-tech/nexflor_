@@ -295,7 +295,11 @@ export function dashboard(workerId) {
       href: `/cursos/${course.id}`,
     }))).slice(0, 4);
 
-  const hour = new Date().getHours();
+  const hour = Number(new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Bogota",
+    hour: "numeric",
+    hourCycle: "h23",
+  }).format(new Date()));
   const hello = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
   return {
