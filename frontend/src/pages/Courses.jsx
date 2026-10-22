@@ -24,7 +24,7 @@ export default function Courses() {
       <section className="page">
         <div className="page-head">
           <div>
-            <p className="eyebrow">Recorrido del cultivo</p>
+            <p className="eyebrow">NEXFLOR ACADEMY</p>
             <h1>De la planta al despacho</h1>
             <p className="lede">Seis cursos, en el orden del trabajo en El Trigal: reconocer la flor, sembrarla, cuidarla, cosecharla, hidratarla y cuidarte.</p>
           </div>

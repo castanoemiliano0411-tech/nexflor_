@@ -3,11 +3,11 @@ import { useApi, WORKER_KEY } from "../api.js";
 
 const links = [
   { to: "/", label: "Inicio", end: true, icon: HomeIcon },
-  { to: "/cursos", label: "Academy", icon: BookIcon },
-  { to: "/practica/preparacion-segura", label: "Práctica", icon: CheckIcon },
+  { to: "/id", label: "NEXFLOR ID", icon: FaceIcon },
+  { to: "/posture", label: "NEXFLOR POSTURE", icon: PostureIcon },
+  { to: "/cursos", label: "NEXFLOR ACADEMY", icon: BookIcon },
   { to: "/equipo", label: "Equipo", icon: PeopleIcon },
   { to: "/progreso", label: "Progreso", icon: ChartIcon },
-  { to: "/id", label: "NEXFLOR ID", icon: FaceIcon },
 ];
 
 export default function Shell() {
@@ -99,14 +99,6 @@ function BookIcon() {
     </svg>
   );
 }
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="4" y="3" width="16" height="18" rx="2" />
-      <path d="m8 12 2.5 2.5L16 9" />
-    </svg>
-  );
-}
 function PeopleIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -123,6 +115,15 @@ function FaceIcon() {
       <circle cx="12" cy="10" r="3.2" />
       <path d="M6 19c.8-2.4 2.8-3.6 6-3.6s5.2 1.2 6 3.6" />
       <path d="M5 8V5.5h2.5M19 8V5.5h-2.5M5 13v2.5h2.5M19 13v2.5h-2.5" />
+    </svg>
+  );
+}
+function PostureIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="5" r="2" />
+      <path d="M12 7.5v4l4 2.5M12 11.5 8 16M8 16v4M16 14.5V20" />
+      <path d="M18 6.5a4 4 0 0 1 0 5" />
     </svg>
   );
 }

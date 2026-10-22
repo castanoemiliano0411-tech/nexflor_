@@ -237,7 +237,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
       <div className="page-head">
         <div>
           <p className="eyebrow">NEXFLOR ID · El Carmen de Viboral</p>
-          <h1>Registro e ingreso</h1>
+          <h1>NEXFLOR ID</h1>
           <p>La cámara muestra una vista previa. Capturar detecta el rostro; guardar lo compara con las personas autorizadas. Detectar una cara no es identificar a alguien.</p>
         </div>
         <button type="button" onClick={onLogout}>Salir{name ? ` · ${name}` : ""}</button>
