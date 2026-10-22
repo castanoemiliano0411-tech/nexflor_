@@ -148,7 +148,7 @@ function Panel({ token, data, setData, error, setError, logout }) {
         </div>
       </header>
       <div className="chips">
-        {[["cursos", "Academy"], ["equipo", "Equipo"], ["archivos", "Archivos"], ["ingreso", "NEXFLOR ID"]].map(([item, label]) => (
+        {[["cursos", "NEXFLOR ACADEMY"], ["equipo", "Equipo"], ["archivos", "Archivos"], ["ingreso", "NEXFLOR ID"]].map(([item, label]) => (
           <button key={item} type="button" className={tab === item ? "on" : ""} onClick={() => setTab(item)}>
             {label}
           </button>

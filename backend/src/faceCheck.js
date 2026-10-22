@@ -21,7 +21,7 @@ function assert(condition, message) {
 }
 
 const started = Date.now();
-const stamp = `T${Date.now().toString().slice(-6)}`;
+const stamp = Date.now().toString().slice(-8);
 const created = [];
 
 try {

@@ -537,7 +537,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .top-logo { display: block; }
   .who div { display: none; }
   .toast { bottom: 84px; }
-  .face-layout, .posture-layout, .split-lists { grid-template-columns: 1fr; }
+  .face-layout, .posture-layout, .split-lists, .academy-path { grid-template-columns: 1fr; }
   .tabbar a { font-size: 10px; }
   .face-actions, .staff-login { display: grid; }
   .face-actions .button, .face-actions button, .staff-login .button { width: 100%; }
@@ -547,8 +547,14 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .face-layout { display: grid; grid-template-columns: 1.4fr .8fr; gap: 16px; align-items: start; }
 .posture-layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; align-items: start; }
-.posture-bed img { width: 100%; height: 280px; object-fit: cover; border-radius: 16px; }
 .posture-bed.alert { outline: 3px solid #c4554a; }
+.posture-stage { position: relative; min-height: 280px; border-radius: 16px; overflow: hidden; background: var(--green-deep); }
+.posture-stage video, .posture-stage canvas { width: 100%; height: min(62vh, 520px); min-height: 280px; object-fit: cover; display: block; transform: scaleX(-1); }
+.posture-stage canvas { position: absolute; inset: 0; pointer-events: none; }
+.posture-stage p { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 16px; color: white; text-align: center; }
+.academy-path { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.academy-path a { display: grid; gap: 4px; background: white; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; text-decoration: none; color: inherit; }
+.academy-path small { color: var(--muted); }
 .posture-steps { margin: 12px 0 0; padding-left: 18px; display: grid; gap: 10px; }
 .posture-steps strong { display: block; }
 .face-form { display: grid; gap: 10px; margin-top: 12px; }

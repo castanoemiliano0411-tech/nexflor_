@@ -265,3 +265,14 @@ export function linkWorkerFace(workerId, personId) {
   writeDb(db);
   return worker.id;
 }
+
+export function saveWorkerDocument(workerId, documentId) {
+  const document = String(documentId || "").trim();
+  if (!/^\d{6,10}$/.test(document)) return null;
+  const db = readDb();
+  const worker = (db.workers || []).find((item) => item.id === workerId);
+  if (!worker) return null;
+  worker.documentId = document;
+  writeDb(db);
+  return document;
+}

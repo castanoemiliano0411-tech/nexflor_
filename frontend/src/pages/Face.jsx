@@ -5,6 +5,14 @@ import { measureVideo, prepareModels } from "../browserFace.js";
 
 const emptyForm = { fullName: "", documentId: "", role: "", email: "" };
 
+function cedulaOk(value) {
+  return /^\d{6,10}$/.test(String(value || "").trim());
+}
+
+function onlyDigits(value) {
+  return String(value || "").replace(/\D/g, "").slice(0, 10);
+}
+
 export default function Face() {
   const token = workerToken();
   const navigate = useNavigate();
@@ -61,7 +69,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
         setForm((current) => ({
           ...current,
           fullName: me.fullName || current.fullName,
-          documentId: me.id || current.documentId,
+          documentId: cedulaOk(me.documentId) ? me.documentId : "",
           role: me.role || current.role || "Trabajador",
         }));
       }).catch(() => {});
@@ -142,8 +150,8 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
       return;
     }
     if (mode === "registro") {
-      if (form.fullName.trim().length < 3 || form.documentId.trim().length < 4 || form.role.trim().length < 2) {
-        setError("Completa nombre, identificación y cargo antes de capturar el rostro.");
+      if (form.fullName.trim().length < 3 || !cedulaOk(form.documentId) || form.role.trim().length < 2) {
+        setError("Completa el nombre, el número de la cédula y el cargo antes de capturar el rostro.");
         return;
       }
     }
@@ -186,8 +194,8 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
       return;
     }
     if (mode === "registro") {
-      if (form.fullName.trim().length < 3 || form.documentId.trim().length < 4 || form.role.trim().length < 2) {
-        setError("Nombre, identificación y cargo son obligatorios.");
+      if (form.fullName.trim().length < 3 || !cedulaOk(form.documentId) || form.role.trim().length < 2) {
+        setError("El nombre, el número de la cédula y el cargo son obligatorios.");
         return;
       }
     }
@@ -264,7 +272,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
           {mode === "registro" && (
             <div className="face-form">
               <label>Nombre completo<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required readOnly={ownAccount} /></label>
-              <label>Identificación<input value={form.documentId} onChange={(event) => setForm({ ...form, documentId: event.target.value })} required readOnly={ownAccount} /></label>
+              <label>Cédula<input value={form.documentId} onChange={(event) => setForm({ ...form, documentId: onlyDigits(event.target.value) })} inputMode="numeric" autoComplete="off" placeholder="Número de la cédula" required /></label>
               <label>Cargo o tipo de persona<input value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} required /></label>
               <label>Correo, si hace falta<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
               <p className="muted">El registro queda pendiente hasta que un administrador lo apruebe. No se guarda la foto, solo una plantilla cifrada.</p>
@@ -292,7 +300,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
           <h2>Si no puedes usar la cámara</h2>
           <p>Un administrador puede entregarte un código. Ese código también lo comprueba el servidor y no autoriza a quien esté pendiente, rechazado o suspendido.</p>
           <form className="face-form" onSubmit={sendCode}>
-            <label>Identificación<input value={code.documentId} onChange={(event) => setCode({ ...code, documentId: event.target.value })} required /></label>
+            <label>Cédula<input value={code.documentId} onChange={(event) => setCode({ ...code, documentId: onlyDigits(event.target.value) })} inputMode="numeric" autoComplete="off" placeholder="Número de la cédula" required /></label>
             <label>Código<input value={code.pin} onChange={(event) => setCode({ ...code, pin: event.target.value })} inputMode="numeric" required /></label>
             <button className="button" type="submit">Entrar con código</button>
           </form>
