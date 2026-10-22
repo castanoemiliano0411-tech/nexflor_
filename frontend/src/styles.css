@@ -562,7 +562,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .face-form input, .toolbar label input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
 .consent { grid-template-columns: auto 1fr; align-items: start; margin: 12px 0; }
 .viewport { position: relative; min-height: 240px; border-radius: 18px; overflow: hidden; background: var(--green-deep); }
-.viewport video { width: 100%; height: min(62vh, 520px); min-height: 280px; object-fit: cover; display: block; transform: scaleX(-1); }
+.viewport video { width: 100%; height: min(46vh, 380px); min-height: 220px; object-fit: cover; display: block; transform: scaleX(-1); }
 .staff-login { display: grid; gap: 12px; width: min(420px, 100%); }
 .staff-login input, .staff-login select, .face-form input { font-size: 16px; min-height: 48px; }
 .login { min-height: 100vh; display: grid; align-items: start; justify-items: center; padding: 24px 16px 40px; overflow: auto; }

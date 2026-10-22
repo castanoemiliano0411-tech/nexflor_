@@ -37,43 +37,84 @@ export async function prepareModels(onProgress) {
   ready = true;
 }
 
-export async function measureVideo(video) {
+const PASSES = [
+  { inputSize: 416, scoreThreshold: 0.25 },
+  { inputSize: 320, scoreThreshold: 0.15 },
+];
+
+function largestFace(faces) {
+  return faces.reduce((best, face) => (
+    face.detection.box.width > best.detection.box.width ? face : best
+  ));
+}
+
+async function findFace(canvas) {
+  for (const pass of PASSES) {
+    const faces = await faceapi.detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions(pass))
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+    if (faces.length) return largestFace(faces);
+  }
+  return null;
+}
+
+function facePrint(context, box) {
+  const x = Math.max(0, Math.floor(box.x));
+  const y = Math.max(0, Math.floor(box.y));
+  const width = Math.max(1, Math.min(24, Math.floor(box.width)));
+  const height = Math.max(1, Math.min(24, Math.floor(box.height)));
+  const data = context.getImageData(x, y, width, height).data;
+  let total = 0;
+  for (let index = 0; index < data.length; index += 16) total += data[index];
+  return total;
+}
+
+export function readingFromSamples(samples, prints) {
+  if (samples.length < 2) return { quality: false, liveness: false, staticImage: false, descriptor: null };
+  const ears = samples.map((sample) => sample.ear);
+  const noses = samples.map((sample) => sample.noseX);
+  const moved = Math.max(...noses) - Math.min(...noses) > samples[0].boxWidth * 0.012;
+  const blinked = Math.max(...ears) - Math.min(...ears) >= 0.02;
+  const liveness = blinked || moved;
+  const frozen = prints.length > 1 && prints.every((print) => print === prints[0]);
+  return {
+    quality: true,
+    liveness,
+    staticImage: frozen && !liveness,
+    descriptor: average(samples.map((sample) => sample.descriptor)),
+  };
+}
+
+export async function measureVideo(video, onStep) {
   await prepareModels();
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d", { willReadFrequently: true });
   const samples = [];
   const prints = [];
-  for (let step = 0; step < 4; step += 1) {
+  for (let step = 0; step < 8 && samples.length < 3; step += 1) {
+    onStep?.(samples.length
+      ? `Rostro visto. Sigue mirando y parpadea. ${samples.length} de 2`
+      : "Buscando el rostro. Mira de frente y acércate.");
     const width = video.videoWidth || 480;
     const height = video.videoHeight || 360;
     canvas.width = width;
     canvas.height = height;
     context.drawImage(video, 0, 0, width, height);
-    const pixels = context.getImageData(0, 0, 32, 32).data;
-    prints.push(Array.from(pixels.slice(0, 64)).join(","));
-    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
-    const faces = await faceapi.detectAllFaces(canvas, options).withFaceLandmarks().withFaceDescriptors();
-    if (faces.length === 1) {
-      const points = faces[0].landmarks.positions;
+    const face = await findFace(canvas);
+    const box = face?.detection.box;
+    if (face && box.width >= 70) {
+      const points = face.landmarks.positions;
+      prints.push(facePrint(context, box));
       samples.push({
-        descriptor: Array.from(faces[0].descriptor),
+        descriptor: Array.from(face.descriptor),
         ear: (eyeAspect(points, 36) + eyeAspect(points, 42)) / 2,
         noseX: points[30].x,
-        boxWidth: faces[0].detection.box.width || 1,
+        boxWidth: box.width || 1,
       });
+    } else if (!samples.length) {
+      onStep?.(box ? "Te veo lejos. Acércate un poco más." : "Todavía no veo un rostro. Ponte frente a la cámara.");
     }
-    if (step < 3) await wait(450);
+    if (step < 7 && samples.length < 3) await wait(240);
   }
-  const staticImage = prints.every((print) => print === prints[0]);
-  if (samples.length < 2) return { quality: false, liveness: false, staticImage, descriptor: null };
-  const ears = samples.map((sample) => sample.ear);
-  const noses = samples.map((sample) => sample.noseX);
-  const moved = Math.max(...noses) - Math.min(...noses) > samples[0].boxWidth * 0.035;
-  const blinked = Math.max(...ears) - Math.min(...ears) >= 0.045;
-  return {
-    quality: true,
-    liveness: !staticImage && (blinked || moved),
-    staticImage,
-    descriptor: average(samples.map((sample) => sample.descriptor)),
-  };
+  return readingFromSamples(samples, prints);
 }

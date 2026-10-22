@@ -92,6 +92,7 @@ export function me(workerId) {
     role: "Trabajador",
     initials: initials(worker.name),
     documentId: /^\d{6,10}$/.test(worker.documentId || "") ? worker.documentId : "",
+    hasFace: Boolean(worker.facePersonId),
     continueCourseId: worker.continueCourseId || db.user.continueCourseId,
   };
 }

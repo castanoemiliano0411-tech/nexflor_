@@ -31,7 +31,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [status, setStatus] = useState(null);
-  const [mode, setMode] = useState("ingreso");
+  const [mode, setMode] = useState("registro");
   const [consent, setConsent] = useState(false);
   const [phase, setPhase] = useState("listo");
   const [result, setResult] = useState(null);
@@ -72,6 +72,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
           documentId: cedulaOk(me.documentId) ? me.documentId : "",
           role: me.role || current.role || "Trabajador",
         }));
+        if (me.hasFace) setMode("ingreso");
       }).catch(() => {});
     }
     refreshEntries();
@@ -116,6 +117,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
         await videoRef.current.play().catch(() => {});
       }
       setCameraOn(true);
+      prepareModels().catch(() => {});
       return true;
     } catch {
       setCameraError("No se pudo abrir la cámara. Revisa el permiso o usa el código alternativo. El acceso no se concede sin verificación.");
@@ -169,13 +171,13 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
       } else {
         await prepareModels((message) => setError(message));
         setError("");
-        const reading = await measureVideo(video);
+        const reading = await measureVideo(video, setCaptureNote);
         if (!reading.quality || !reading.descriptor) {
-          setError("No hay un rostro estable para comparar. Acércate, mira a la cámara y vuelve a capturar. Esto no es una identificación.");
+          setError("No alcancé a ver el rostro. Ponte de frente, acércate y vuelve a capturar.");
           return;
         }
         if (!reading.liveness) {
-          setError("Se detectó un rostro, pero no se comprobó que sea una persona presente. Parpadea o mueve un poco la cabeza y captura de nuevo.");
+          setError("Ya veo el rostro. Parpadea o mueve un poco la cabeza y captura otra vez.");
           return;
         }
         setCapture(reading);
@@ -247,19 +249,28 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
         <div>
           <p className="eyebrow">NEXFLOR ID · El Carmen de Viboral</p>
           <h1>NEXFLOR ID</h1>
-          <p>La cámara muestra una vista previa. Capturar detecta el rostro; guardar lo compara con las personas autorizadas. Detectar una cara no es identificar a alguien.</p>
+          <p>Un rostro nuevo se guarda en Primera vez y queda pendiente hasta que un administrador lo apruebe. Ingreso reconoce a quien ya está aprobado.</p>
         </div>
         <button type="button" onClick={onLogout}>Salir{name ? ` · ${name}` : ""}</button>
       </div>
 
-      {status?.notice && <p className={status.engine === "server" && status.modelReady ? "muted" : "status"}>{status.notice}</p>}
+      {status?.notice && <p className="muted">{status.notice}</p>}
 
       <div className="face-layout">
         <section className="card scanner">
           <div className="chips">
-            <button type="button" className={mode === "ingreso" ? "on" : ""} onClick={() => { setMode("ingreso"); setResult(null); setCapture(null); setCaptureNote(""); }}>Ya estoy registrado</button>
             <button type="button" className={mode === "registro" ? "on" : ""} onClick={() => { setMode("registro"); setResult(null); setCapture(null); setCaptureNote(""); }}>Primera vez</button>
+            <button type="button" className={mode === "ingreso" ? "on" : ""} onClick={() => { setMode("ingreso"); setResult(null); setCapture(null); setCaptureNote(""); }}>Ya estoy registrado</button>
           </div>
+          {mode === "registro" && (
+            <div className="face-form">
+              <label>Nombre completo<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required readOnly={ownAccount} /></label>
+              <label>Cédula<input value={form.documentId} onChange={(event) => setForm({ ...form, documentId: onlyDigits(event.target.value) })} inputMode="numeric" autoComplete="off" placeholder="Número de la cédula" required /></label>
+              <label>Cargo o tipo de persona<input value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} required /></label>
+              <label>Correo, si hace falta<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
+              <p className="muted">Escribe la cédula, inicia la cámara y mira de frente. No se guarda la foto, solo una plantilla cifrada.</p>
+            </div>
+          )}
           <div className={`viewport ${phase === "escaneando" ? "scanning" : ""}`}>
             <video ref={videoRef} autoPlay playsInline muted />
             {!cameraOn && <p>Vista previa: inicia la cámara para ver el rostro antes de capturarlo.</p>}
@@ -269,15 +280,6 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
             <span>{status?.consent}</span>
           </label>
-          {mode === "registro" && (
-            <div className="face-form">
-              <label>Nombre completo<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required readOnly={ownAccount} /></label>
-              <label>Cédula<input value={form.documentId} onChange={(event) => setForm({ ...form, documentId: onlyDigits(event.target.value) })} inputMode="numeric" autoComplete="off" placeholder="Número de la cédula" required /></label>
-              <label>Cargo o tipo de persona<input value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} required /></label>
-              <label>Correo, si hace falta<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
-              <p className="muted">El registro queda pendiente hasta que un administrador lo apruebe. No se guarda la foto, solo una plantilla cifrada.</p>
-            </div>
-          )}
           {captureNote && <p className="muted">{captureNote}</p>}
           {cameraError && <p className="status error">{cameraError}</p>}
           {error && <p className="status error">{error}</p>}
