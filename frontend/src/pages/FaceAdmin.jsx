@@ -121,11 +121,18 @@ export default function FaceAdmin({ token }) {
     URL.revokeObjectURL(url);
   }
 
-  const visiblePeople = people.filter((person) => {
-    const text = query.trim().toLowerCase();
-    if (!text) return true;
-    return person.fullName.toLowerCase().includes(text) || person.documentId.toLowerCase().includes(text);
-  });
+  const pendingPeople = (board?.pending || people.filter((person) => person.status === "pendiente"));
+  const visiblePeople = people
+    .filter((person) => {
+      const text = query.trim().toLowerCase();
+      if (!text) return true;
+      return person.fullName.toLowerCase().includes(text) || person.documentId.toLowerCase().includes(text);
+    })
+    .slice()
+    .sort((left, right) => {
+      const rank = (status) => (status === "pendiente" ? 0 : status === "autorizado" ? 1 : 2);
+      return rank(left.status) - rank(right.status) || String(right.createdAt).localeCompare(String(left.createdAt));
+    });
 
   async function saveStaff(event) {
     event.preventDefault();
@@ -156,6 +163,35 @@ export default function FaceAdmin({ token }) {
       {error && <p className="status error">{error}</p>}
       {pinNote && <p className="face-result ok">{pinNote}</p>}
       <p className="muted">Este reporte se actualiza solo cada pocos segundos{updatedAt ? ` · última lectura ${when(updatedAt)}` : ""}.</p>
+
+      <section className={`card pending-queue ${pendingPeople.length ? "has-pending" : ""}`}>
+        <header>
+          <div>
+            <p className="eyebrow">Aprobación de rostros</p>
+            <h2>Pendientes de aceptar</h2>
+          </div>
+          <button type="button" onClick={() => load()}>Actualizar lista</button>
+        </header>
+        {pendingPeople.length ? (
+          <ul className="pending-list">
+            {pendingPeople.map((person) => (
+              <li key={person.id}>
+                <div>
+                  <strong>{person.fullName}</strong>
+                  <span>Cédula {person.documentId} · {person.role || "Trabajador"} · {when(person.createdAt)}</span>
+                </div>
+                <div className="row-actions">
+                  <button className="button" type="button" onClick={() => act(`/admin/face/people/${person.id}/approve`)}>Aprobar rostro</button>
+                  <button type="button" onClick={() => act(`/admin/face/people/${person.id}/reject`)}>Rechazar</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">No hay rostros esperando aprobación. Cuando alguien se registre en NEXFLOR ID, aparece aquí para que lo apruebes.</p>
+        )}
+      </section>
+
       <div className="stats">
         <article className="card stat"><span>Entraron hoy</span><strong>{board?.counts.entered ?? "–"}</strong></article>
         <article className="card stat"><span>No se han presentado</span><strong>{board?.counts.absent ?? "–"}</strong></article>

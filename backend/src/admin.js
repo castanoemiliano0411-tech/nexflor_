@@ -41,6 +41,7 @@ function courseOrFail(db, id) {
 
 export function overview() {
   const db = readDb();
+  const pendingFaces = (db.facePeople || []).filter((person) => person.status === "pendiente").length;
   return {
     courses: db.courses.map((course) => ({
       id: course.id,
@@ -59,6 +60,7 @@ export function overview() {
     })),
     team: db.team,
     files: listFiles(),
+    pendingFaces,
   };
 }
 

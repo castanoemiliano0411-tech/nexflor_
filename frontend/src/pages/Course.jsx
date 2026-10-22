@@ -70,11 +70,30 @@ function CourseBody({ data, current, setCurrent, busy, note, toast, toggle }) {
   const lesson = data.lessons[current];
   const steps = lesson.steps || [];
   const [seen, setSeen] = useState(1);
+  const [checked, setChecked] = useState({});
   const atStart = current === 0;
   const atEnd = current === data.lessons.length - 1;
   const ready = data.progress.percent === 100;
+  const stepProgress = steps.length ? Math.round((Math.min(seen, steps.length) / steps.length) * 100) : 100;
 
-  useEffect(() => setSeen(1), [lesson.id]);
+  useEffect(() => {
+    setSeen(1);
+    setChecked({});
+  }, [lesson.id]);
+
+  useEffect(() => {
+    function onKey(event) {
+      if (event.target.matches("input, textarea, button, a")) return;
+      if (event.key === "ArrowRight" && !atEnd) setCurrent(current + 1);
+      if (event.key === "ArrowLeft" && !atStart) setCurrent(current - 1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [atEnd, atStart, current, setCurrent]);
+
+  function finishLesson() {
+    toggle(lesson.id);
+  }
 
   return (
     <section className="page">
@@ -100,11 +119,24 @@ function CourseBody({ data, current, setCurrent, busy, note, toast, toggle }) {
             </div>
           </article>
           <article className="teach card">
-            <p className="eyebrow">Paso {Math.min(seen, steps.length || 1)} de {steps.length || 1}</p>
+            <div className="course-progress compact">
+              <span>Paso {Math.min(seen, steps.length || 1)} de {steps.length || 1}</span>
+              <div className="meter"><i style={{ width: `${stepProgress}%` }} /></div>
+            </div>
             <h3>{lesson.idea || lesson.title}</h3>
-            <ol className="teach-steps">
-              {steps.slice(0, seen).map((step) => (
-                <li key={step}>{step}</li>
+            <ol className="teach-steps interactive">
+              {steps.slice(0, seen).map((step, index) => (
+                <li key={step} className={checked[index] ? "checked" : ""}>
+                  <button
+                    type="button"
+                    className="step-check"
+                    aria-pressed={Boolean(checked[index])}
+                    onClick={() => setChecked((current) => ({ ...current, [index]: !current[index] }))}
+                  >
+                    {checked[index] ? "✓" : index + 1}
+                  </button>
+                  <span>{step}</span>
+                </li>
               ))}
             </ol>
             {seen < steps.length ? (
@@ -114,8 +146,8 @@ function CourseBody({ data, current, setCurrent, busy, note, toast, toggle }) {
             ) : (
               <>
                 {lesson.tip && <p className="tip">{lesson.tip}</p>}
-                <button className="button" type="button" onClick={() => toggle(lesson.id)} disabled={busy}>
-                  {lesson.done ? "Volver a abrir la lección" : "Ya lo entendí"}
+                <button className="button" type="button" onClick={finishLesson} disabled={busy}>
+                  {lesson.done ? "Volver a abrir la lección" : "Ya lo entendí · siguiente lección"}
                 </button>
               </>
             )}
