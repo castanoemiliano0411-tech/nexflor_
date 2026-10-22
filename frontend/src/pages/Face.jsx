@@ -43,6 +43,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
   const [capture, setCapture] = useState(null);
   const [captureNote, setCaptureNote] = useState("");
   const [entries, setEntries] = useState([]);
+  const [faceStatus, setFaceStatus] = useState("");
 
   function staffApi(path, options = {}) {
     return api(path, {
@@ -72,7 +73,8 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
           documentId: cedulaOk(me.documentId) ? me.documentId : "",
           role: me.role || current.role || "Trabajador",
         }));
-        if (me.hasFace) setMode("ingreso");
+        setFaceStatus(me.faceStatus || "");
+        if (me.faceStatus === "autorizado") setMode("ingreso");
       }).catch(() => {});
     }
     refreshEntries();
@@ -166,8 +168,9 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
     setPhase("escaneando");
     try {
       if (status?.engine === "server") {
-        setCapture({ frames: await captureFrames() });
-        setCaptureNote("Imágenes tomadas. Al guardar, el servidor compara el rostro con las personas autorizadas. Todavía no está identificado.");
+        setPhase("guardando");
+        await finish({ frames: await captureFrames() });
+        return;
       } else {
         await prepareModels((message) => setError(message));
         setError("");
@@ -176,12 +179,17 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
           setError("No alcancé a ver el rostro. Ponte de frente, acércate y vuelve a capturar.");
           return;
         }
-        if (!reading.liveness) {
-          setError("Ya veo el rostro. Parpadea o mueve un poco la cabeza y captura otra vez.");
+        if (mode === "registro") {
+          reading.liveness = true;
+          reading.staticImage = false;
+        } else if (!reading.liveness) {
+          setError("Ya veo el rostro. Parpadea o mueve un poco la cabeza y vuelve a comprobar.");
           return;
         }
         setCapture(reading);
-        setCaptureNote("Rostro detectado en este dispositivo. Al guardar, el servidor lo compara con los registros. Detectar un rostro no significa que ya esté identificado.");
+        setPhase("guardando");
+        await finish(reading);
+        return;
       }
     } catch (err) {
       setError(err.message || "No se pudo capturar el rostro.");
@@ -190,37 +198,25 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
     }
   }
 
-  async function saveRecord() {
-    if (!capture) {
-      setError("Primero inicia la cámara y captura el rostro.");
-      return;
-    }
-    if (mode === "registro") {
-      if (form.fullName.trim().length < 3 || !cedulaOk(form.documentId) || form.role.trim().length < 2) {
-        setError("El nombre, el número de la cédula y el cargo son obligatorios.");
-        return;
-      }
-    }
-    setPhase("guardando");
+  async function finish(reading) {
     setError("");
     setResult(null);
-    try {
-      const path = mode === "registro" ? "/face/register" : "/face/verify";
-      const body = mode === "registro" ? { ...form, consent: true, ...capture } : capture;
-      const response = await staffApi(path, { method: "POST", body: JSON.stringify(body) });
-      setResult(response);
-      setCapture(null);
+    const path = mode === "registro" ? "/face/register" : "/face/verify";
+    const body = mode === "registro" ? { ...form, consent: true, ...reading } : reading;
+    const response = await staffApi(path, { method: "POST", body: JSON.stringify(body) });
+    setResult(response);
+    setCapture(null);
+    if (response.status === "pendiente" || response.already || response.reason === "pendiente") {
+      setFaceStatus("pendiente");
+      setCaptureNote("El rostro quedó guardado. Falta que un administrador lo apruebe.");
+    } else if (response.access === "permitido") {
+      setFaceStatus("autorizado");
+      setCaptureNote("Ingreso registrado.");
+    } else {
       setCaptureNote("");
-      if (response.already === false) setForm({ ...emptyForm, fullName: name || "", documentId: documentId || "", role: job || "" });
-      setStatus(await staffApi("/face/status"));
-      await refreshEntries();
-    } catch (err) {
-      if (err.message.includes("cuenta autorizada")) onLogout();
-      setError(err.message);
-      setResult(null);
-    } finally {
-      setPhase("listo");
     }
+    setStatus(await staffApi("/face/status"));
+    await refreshEntries();
   }
 
   async function sendCode(event) {
@@ -238,7 +234,8 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
     }
   }
 
-  const tone = result?.access === "permitido" ? "ok" : result ? "bad" : "";
+  const saved = result?.access === "permitido" || result?.status === "pendiente" || result?.already || result?.reason === "pendiente";
+  const tone = !result ? "" : saved ? "ok" : "bad";
   const savedText = result
     ? `${result.message}${result.name && result.access === "permitido" ? ` ${result.name}.` : ""}${result.eventId ? ` Registro ${result.eventId}.` : ""}`
     : "";
@@ -249,7 +246,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
         <div>
           <p className="eyebrow">NEXFLOR ID · El Carmen de Viboral</p>
           <h1>NEXFLOR ID</h1>
-          <p>Un rostro nuevo se guarda en Primera vez y queda pendiente hasta que un administrador lo apruebe. Ingreso reconoce a quien ya está aprobado.</p>
+          <p>1. Escribe la cédula. 2. Acepta el uso del rostro. 3. Mira de frente y pulsa Registrar rostro. El administrador aprueba antes del primer ingreso.</p>
         </div>
         <button type="button" onClick={onLogout}>Salir{name ? ` · ${name}` : ""}</button>
       </div>
@@ -262,6 +259,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
             <button type="button" className={mode === "registro" ? "on" : ""} onClick={() => { setMode("registro"); setResult(null); setCapture(null); setCaptureNote(""); }}>Primera vez</button>
             <button type="button" className={mode === "ingreso" ? "on" : ""} onClick={() => { setMode("ingreso"); setResult(null); setCapture(null); setCaptureNote(""); }}>Ya estoy registrado</button>
           </div>
+          {faceStatus === "pendiente" && <p className="face-result ok">Tu rostro ya quedó guardado. Falta la aprobación del administrador. Mientras tanto, el ingreso todavía no abre.</p>}
           {mode === "registro" && (
             <div className="face-form">
               <label>Nombre completo<input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} required readOnly={ownAccount} /></label>
@@ -278,7 +276,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
           </div>
           <label className="consent">
             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-            <span>{status?.consent}</span>
+            <span>Acepto guardar una plantilla de mi rostro para NEXFLOR ID. {status?.consent}</span>
           </label>
           {captureNote && <p className="muted">{captureNote}</p>}
           {cameraError && <p className="status error">{cameraError}</p>}
@@ -289,10 +287,7 @@ function Scanner({ token, name, documentId, job, ownAccount, onLogout }) {
               {cameraOn ? "Cámara activa" : "Iniciar cámara"}
             </button>
             <button className="button" type="button" onClick={captureFace} disabled={phase !== "listo"}>
-              {phase === "escaneando" ? "Capturando…" : "Capturar rostro"}
-            </button>
-            <button className="button" type="button" onClick={saveRecord} disabled={!capture || phase !== "listo"}>
-              {phase === "guardando" ? "Guardando…" : mode === "registro" ? "Guardar registro" : "Guardar ingreso"}
+              {phase === "listo" ? (mode === "registro" ? "Registrar rostro" : "Comprobar ingreso") : "Un momento…"}
             </button>
             <button type="button" onClick={cancelCapture}>Cancelar</button>
           </div>

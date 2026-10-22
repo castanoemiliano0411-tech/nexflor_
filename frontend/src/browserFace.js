@@ -38,8 +38,8 @@ export async function prepareModels(onProgress) {
 }
 
 const PASSES = [
-  { inputSize: 416, scoreThreshold: 0.25 },
-  { inputSize: 320, scoreThreshold: 0.15 },
+  { inputSize: 320, scoreThreshold: 0.2 },
+  { inputSize: 224, scoreThreshold: 0.12 },
 ];
 
 function largestFace(faces) {
@@ -59,10 +59,12 @@ async function findFace(canvas) {
 }
 
 function facePrint(context, box) {
-  const x = Math.max(0, Math.floor(box.x));
-  const y = Math.max(0, Math.floor(box.y));
-  const width = Math.max(1, Math.min(24, Math.floor(box.width)));
-  const height = Math.max(1, Math.min(24, Math.floor(box.height)));
+  const limitWidth = context.canvas.width;
+  const limitHeight = context.canvas.height;
+  const x = Math.max(0, Math.min(limitWidth - 1, Math.floor(box.x)));
+  const y = Math.max(0, Math.min(limitHeight - 1, Math.floor(box.y)));
+  const width = Math.max(1, Math.min(24, limitWidth - x, Math.floor(box.width)));
+  const height = Math.max(1, Math.min(24, limitHeight - y, Math.floor(box.height)));
   const data = context.getImageData(x, y, width, height).data;
   let total = 0;
   for (let index = 0; index < data.length; index += 16) total += data[index];
@@ -75,8 +77,8 @@ export function readingFromSamples(samples, prints) {
   const noses = samples.map((sample) => sample.noseX);
   const moved = Math.max(...noses) - Math.min(...noses) > samples[0].boxWidth * 0.012;
   const blinked = Math.max(...ears) - Math.min(...ears) >= 0.02;
-  const liveness = blinked || moved;
   const frozen = prints.length > 1 && prints.every((print) => print === prints[0]);
+  const liveness = blinked || moved || !frozen;
   return {
     quality: true,
     liveness,
@@ -102,7 +104,7 @@ export async function measureVideo(video, onStep) {
     context.drawImage(video, 0, 0, width, height);
     const face = await findFace(canvas);
     const box = face?.detection.box;
-    if (face && box.width >= 70) {
+    if (face && box.width >= 40) {
       const points = face.landmarks.positions;
       prints.push(facePrint(context, box));
       samples.push({
