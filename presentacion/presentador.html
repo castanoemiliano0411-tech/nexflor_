@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentador — NEXFLOR</title>
+    <link rel="stylesheet" href="css/presentador.css">
+</head>
+<body>
+<header class="top">
+    <div class="brand">
+        <img class="school" src="img/logo-santamaria.png" alt="I.E.R. Santa María">
+        <img src="img/logo-nexflor.svg" alt="NEXFLOR">
+        <img class="trigal" src="img/logo-trigal.png" alt="Flores El Trigal">
+        <strong>NEXFLOR</strong>
+        <span>Vista de presentador</span>
+    </div>
+    <div class="timer" id="timer">
+        <div class="timer-main">
+            <small>Tiempo</small>
+            <strong><span id="elapsed">0:00</span><em> / <span id="planned"></span></em></strong>
+        </div>
+        <span class="pace" id="pace">Listo</span>
+        <button type="button" id="btnTimer">Iniciar</button>
+        <button type="button" id="btnReset">Reiniciar</button>
+    </div>
+    <div class="clock" id="clock"></div>
+</header>
+<main class="layout">
+    <section class="now">
+        <div class="label">
+            <b id="nowNum">01</b>
+            <h1 id="nowTitle"></h1>
+            <span class="who" id="nowWho"></span>
+        </div>
+        <div class="frame"><iframe id="frameNow" title="Diapositiva actual" tabindex="-1"></iframe></div>
+        <div class="slide-timer" id="slideTimer">
+            <div class="bar"><span id="slideBar"></span></div>
+            <span id="slideTime">0:00 / 0:00</span>
+        </div>
+        <div class="notes">
+            <ul class="keys" id="keys"></ul>
+            <p class="texto" id="texto"></p>
+        </div>
+    </section>
+    <aside class="side">
+        <div class="label small">
+            <span>Siguiente</span>
+            <h2 id="nextTitle"></h2>
+        </div>
+        <div class="frame"><iframe id="frameNext" title="Siguiente diapositiva" tabindex="-1"></iframe></div>
+        <div class="steps-row">
+            <span>Pasos</span>
+            <div class="steps" id="steps"></div>
+        </div>
+        <ol class="agenda" id="agenda"></ol>
+        <nav class="controls">
+            <button type="button" id="btnPrev">← Anterior</button>
+            <button type="button" class="primary" id="btnNext">Siguiente →</button>
+        </nav>
+    </aside>
+</main>
+<div class="nolink" id="nolink">
+    <div>
+        <h2>Abre esta vista desde la presentación</h2>
+        <p>En la presentación pulsa <kbd>P</kbd>. Esta ventana controla las diapositivas y muestra lo que hay que decir.</p>
+    </div>
+</div>
+<script src="js/guion.js"></script>
+<script src="js/presentador.js"></script>
+</body>
+</html>
