@@ -208,7 +208,7 @@ export default function FaceAdmin({ token }) {
         {edit && (
           <form className="face-form" onSubmit={savePerson}>
             <label>Nombre<input value={edit.fullName} onChange={(event) => setEdit({ ...edit, fullName: event.target.value })} /></label>
-            <label>Identificación<input value={edit.documentId} onChange={(event) => setEdit({ ...edit, documentId: event.target.value })} /></label>
+            <label>Cédula<input value={edit.documentId} onChange={(event) => setEdit({ ...edit, documentId: event.target.value.replace(/\D/g, "").slice(0, 10) })} inputMode="numeric" placeholder="Número de la cédula" /></label>
             <label>Cargo<input value={edit.role || ""} onChange={(event) => setEdit({ ...edit, role: event.target.value })} /></label>
             <label>Correo<input value={edit.email || ""} onChange={(event) => setEdit({ ...edit, email: event.target.value })} /></label>
             <div className="face-actions">
@@ -220,7 +220,7 @@ export default function FaceAdmin({ token }) {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Nombre</th><th>Identificación</th><th>Cargo</th><th>Registro</th><th>Estado</th><th></th></tr>
+              <tr><th>Nombre</th><th>Cédula</th><th>Cargo</th><th>Registro</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
               {visiblePeople.map((person) => (

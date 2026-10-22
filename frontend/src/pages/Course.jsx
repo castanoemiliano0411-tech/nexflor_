@@ -78,7 +78,7 @@ function CourseBody({ data, current, setCurrent, busy, note, toast, toggle }) {
 
   return (
     <section className="page">
-      <p className="eyebrow">{data.category} · {data.level}</p>
+      <p className="eyebrow">NEXFLOR ACADEMY · {data.category}</p>
       <h1>{data.title}</h1>
       <p className="lede">{data.summary}</p>
       <div className="course-progress">

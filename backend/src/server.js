@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as store from "./store.js";
-import { createStaff, ensureAdmin, ensureStaff, getWorkerById, linkWorkerFace, listStaff, loginAdmin, loginWorker, readSession, registerWorker, setStaffActive } from "./auth.js";
+import { createStaff, ensureAdmin, ensureStaff, getWorkerById, linkWorkerFace, listStaff, loginAdmin, loginWorker, readSession, registerWorker, saveWorkerDocument, setStaffActive } from "./auth.js";
 import * as admin from "./admin.js";
 import * as face from "./faceStore.js";
 import { analyzeFrames, engineStatus, startEngine } from "./faceEngine.js";
@@ -253,7 +253,7 @@ app.get("/api/face/today", (req, res) => {
   const worker = session.role === "worker" ? getWorkerById(session.id) : null;
   res.json(face.history({ date: today })
     .filter((event) => event.access === "permitido")
-    .filter((event) => !worker || event.personId === worker.facePersonId || event.documentId === worker.id)
+    .filter((event) => !worker || event.personId === worker.facePersonId || event.documentId === worker.documentId || event.documentId === worker.id)
     .map((event) => ({
       id: event.id,
       at: event.at,
@@ -282,7 +282,7 @@ app.post("/api/face/register", async (req, res, next) => {
     const worker = session.role === "worker" ? getWorkerById(session.id) : null;
     const result = face.registerPerson({
       fullName: worker?.name || req.body?.fullName,
-      documentId: worker?.id || req.body?.documentId,
+      documentId: req.body?.documentId,
       role: req.body?.role || worker?.role || "Trabajador",
       email: req.body?.email,
       consent: req.body?.consent,
@@ -292,6 +292,7 @@ app.post("/api/face/register", async (req, res, next) => {
       workerId: worker?.id || "",
     }, session.id);
     if (worker && result.person?.id) linkWorkerFace(worker.id, result.person.id);
+    if (worker && result.person?.documentId) saveWorkerDocument(worker.id, result.person.documentId);
     res.json(result);
   } catch (error) { next(error); }
 });

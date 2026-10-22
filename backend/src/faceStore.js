@@ -315,6 +315,16 @@ function cleanText(value, max) {
   return String(value || "").trim().replace(/\s+/g, " ").slice(0, max);
 }
 
+function cleanCedula(value) {
+  const document = String(value || "").replace(/\D/g, "").slice(0, 10);
+  if (!/^\d{6,10}$/.test(document)) {
+    const error = new Error("La identificación es el número de la cédula, de 6 a 10 dígitos.");
+    error.status = 400;
+    throw error;
+  }
+  return document;
+}
+
 export function registerPerson({ fullName, documentId, role, email, consent, descriptor, liveness, quality, workerId }, actor = "") {
   if (consent !== true) {
     const error = new Error("Hace falta el consentimiento para guardar datos del rostro.");
@@ -322,16 +332,11 @@ export function registerPerson({ fullName, documentId, role, email, consent, des
     throw error;
   }
   const name = cleanText(fullName, 80);
-  const document = cleanText(documentId, 20);
+  const document = cleanCedula(documentId);
   const job = cleanText(role, 80);
   const mail = cleanText(email, 80);
   if (name.length < 3) {
     const error = new Error("Escribe el nombre completo.");
-    error.status = 400;
-    throw error;
-  }
-  if (!/^[A-Za-z0-9-]{4,20}$/.test(document)) {
-    const error = new Error("La identificación debe tener entre 4 y 20 letras o números.");
     error.status = 400;
     throw error;
   }
@@ -431,16 +436,11 @@ export function removeFace(id) {
 
 export function updatePerson(id, { fullName, documentId, role, email }, actor) {
   const name = cleanText(fullName, 80);
-  const document = cleanText(documentId, 20);
+  const document = cleanCedula(documentId);
   const job = cleanText(role, 80);
   const mail = cleanText(email, 80);
   if (name.length < 3) {
     const error = new Error("Escribe el nombre completo.");
-    error.status = 400;
-    throw error;
-  }
-  if (!/^[A-Za-z0-9-]{4,20}$/.test(document)) {
-    const error = new Error("La identificación debe tener entre 4 y 20 letras o números.");
     error.status = 400;
     throw error;
   }
@@ -458,7 +458,7 @@ export function updatePerson(id, { fullName, documentId, role, email }, actor) {
   const person = findPerson(db, id);
   const taken = db.facePeople.find((item) => item.id !== id && item.documentId.toLowerCase() === document.toLowerCase());
   if (taken) {
-    const error = new Error("Esa identificación ya pertenece a otra persona.");
+    const error = new Error("Esa cédula ya pertenece a otra persona.");
     error.status = 409;
     throw error;
   }

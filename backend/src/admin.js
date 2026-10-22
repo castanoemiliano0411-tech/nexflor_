@@ -3,7 +3,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { readDb, writeDb } from "./store.js";
 
-const uploadsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../uploads");
+const uploadsDir = process.env.VERCEL
+  ? path.join("/tmp", "nexflor-uploads")
+  : path.join(path.dirname(fileURLToPath(import.meta.url)), "../uploads");
 
 function fail(message, status = 400) {
   const error = new Error(message);
@@ -184,10 +186,14 @@ export function removePerson(id) {
 }
 
 export function listFiles() {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  return fs.readdirSync(uploadsDir)
-    .filter((name) => fs.statSync(path.join(uploadsDir, name)).isFile())
-    .map((name) => ({ name, url: `/api/uploads/${name}` }));
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    return fs.readdirSync(uploadsDir)
+      .filter((name) => fs.statSync(path.join(uploadsDir, name)).isFile())
+      .map((name) => ({ name, url: `/api/uploads/${name}` }));
+  } catch {
+    return [];
+  }
 }
 
 export function saveFile(name, dataUrl) {
